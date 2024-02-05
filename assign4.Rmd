@@ -1,0 +1,269 @@
+---
+title: "ST661: Assignment 4"
+author: "Francis Onyango Owino"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+```
+
+
+#### Question 1
+a.
+
+```{r}
+
+avg_mass <- starwars |> 
+  group_by(gender) |> 
+  summarise(average_mass = mean(mass, na.rm = T)) |> 
+  arrange(average_mass) 
+
+
+
+avg_mass
+
+# is_tibble(mass)
+```
+b.
+
+```{r}
+starwars <- starwars |> 
+  mutate(bmi = (mass / (height/100)^2))
+
+starwars |> 
+  select(name, species, bmi) |> 
+  head()
+
+```
+c. 
+
+```{r}
+
+
+lowest_bmi <- starwars |> 
+  ungroup() |> 
+  slice_min(bmi) |> 
+  select(species)
+
+lowest_bmi
+
+
+highest_bmi <- starwars |> 
+  ungroup() |> 
+  slice_max(bmi) |> 
+  select(species)
+
+
+highest_bmi
+
+```
+d.
+
+```{r}
+starwars <- starwars |> 
+  rowwise() |> 
+  mutate(nfilm = length(films)) 
+
+starwars |> 
+  select(name, species, films, nfilm) |> 
+  head()
+```
+e.
+
+```{r}
+
+starwars |> 
+  ungroup() |> 
+  slice_max(nfilm) |> 
+  select(name)
+
+```
+
+#### Question 2
+
+
+```{r}
+d <- read_csv("top40Univ.csv", show_col_types = F)
+d
+```
+
+a.
+
+```{r}
+d <- d |> 
+  mutate(`Quality of Education` = as.numeric(`Quality of Education`))
+
+```
+
+b.
+
+```{r}
+location <- d |> 
+  group_by(Location) |> 
+  summarise(count = n()) |> 
+  arrange(desc(count)) 
+  
+ location
+ 
+ highest_top40 <- location |> 
+   slice(1)
+ 
+ highest_top40
+```
+
+c.
+
+```{r}
+ggplot(data = location,
+       mapping = aes(x = Location, y = count)) +
+  geom_bar(stat = "identity")
+```
+
+d.
+
+```{r}
+ggplot(data = location,
+       mapping = aes(x = fct_reorder(Location, -count), y = count)) +
+  geom_bar(stat = "identity") +
+  labs(x = "Location")
+
+```
+
+e.
+
+```{r}
+top5 <- function(x, na.rm = T){
+  
+  count_ <- length(x[x %in% 1:5])
+  return(count_)
+  
+}
+
+
+x1 <- c(NA,10:1)
+
+x1
+
+
+top5(x1)
+
+x2 <- c(6,2,9,-1,0,4)
+x2
+top5(x2)
+
+```
+f.
+
+```{r}
+
+d <- d |> 
+  rowwise() |> 
+  mutate(top5 = top5(c(`Quality of Education`, Publications, Influence, Citations, `Broad Impact`)))
+d
+```
+g.
+
+```{r}
+at_least_one_top5 <- d |> 
+  filter(top5 !=0) |> 
+  select(Institution)
+
+
+
+at_least_one_top5
+  
+```
+
+h.
+```{r}
+
+d <- d |> 
+  mutate(Continent = case_when(
+    Location %in% c("USA", "Canada") ~ "NorthAmerica",
+    Location %in% c("Japan", "South Korea") ~ "Asia",
+    .default =  "Europe"
+  ))
+
+d
+```
+
+i.
+```{r}
+ggplot(data = d,
+       mapping = aes(Citations, `Broad Impact`, col = Continent)) +
+  geom_point() 
+
+
+```
+
+
+
+#### Question 3
+
+
+```{r}
+a <- read_csv("academy_awards.csv")
+a
+```
+
+a.
+
+```{r}
+a_sep <- a |> 
+  select(1:5) |> 
+  separate(Year, into = c("actual year", "instance of ceremony"), sep = 4) |> 
+  mutate(`actual year` = as.numeric(`actual year`))
+
+a_sep
+
+```
+
+b.
+```{r}
+
+actress <- a_sep |> 
+  filter(Category %in% c("Actress -- Leading Role", "Actress -- Supporting Role")) |> 
+  group_by(Nominee) |> 
+  summarise(Nominations = n(),
+            Wins = sum(`Won?` == "YES"),
+            FirstYear = min(`actual year`),
+            LastYear = max(`actual year`))
+
+actress
+  
+```
+
+c.
+```{r}
+over2_wins <- actress |> 
+  filter(Wins>=2) |> 
+  nrow()
+
+over2_wins
+```
+
+d.
+```{r}
+fiveplus_nominations_never_won <- actress |> 
+  filter(Nominations >= 5 & Wins == 0)
+
+fiveplus_nominations_never_won
+```
+
+e.
+
+```{r}
+biggest_gap <- actress |> 
+  mutate(gap = LastYear - FirstYear) |> 
+  slice_max(gap) |> 
+  select(Nominee)
+
+biggest_gap
+
+```

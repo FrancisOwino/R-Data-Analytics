@@ -1,0 +1,281 @@
+---
+title: "ST661: Assignment 3" 
+author: "Francis Onyango Owino" 
+date: "`r format(Sys.time(), '%d %B, %Y')`" 
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+library(GGally)
+library(MASS)
+library(mosaicData)
+library(tidyverse)
+```
+
+
+#### Question 1
+
+```{r}
+head(Pima.tr, n = 2)
+```
+
+a.
+```{r}
+ggplot(data = Pima.tr,
+       mapping = aes(x = bp, y = npreg)) +
+  geom_point()
+```
+
+b.
+```{r}
+Pima.tr$npregf <- cut_interval(Pima.tr$npreg, n = 4,
+                               labels = c("L1", "L2", "L3", "L4"))
+Pima.tr |>
+  head(n = 2)
+```
+
+c.
+```{r}
+ggplot(data = Pima.tr,
+       mapping = aes(x = npregf, y = bp)) +
+  geom_boxplot()
+```
+
+d.
+```{r}
+ggplot(data = Pima.tr,
+       mapping = aes(x = glu, y = age, color = type)) +
+  geom_point() +
+  geom_smooth(method = lm)
+```
+
+e.
+```{r}
+ggplot(data = Pima.tr,
+       mapping = aes(x = glu, y = age)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(vars(type))
+```
+
+#### Question 2
+
+```{r}
+data("Gestation")
+Gestation |>
+  head(n = 3)
+```
+
+a.
+```{r}
+ggplot(data = Gestation,
+       mapping = aes(x = age, y = dage)) +
+  geom_point() +
+  labs(title = "Association between Mother's and Father's Age") +
+  theme(plot.title = element_text(hjust = .5)) +
+  geom_jitter()
+
+
+ggplot(data = Gestation,
+       mapping = aes(x = age, y = dage)) +
+  geom_smooth(method = lm, se = F) +
+  geom_jitter()
+
+```
+
+b.
+```{r}
+ggplot(data = Gestation,
+       mapping = aes(race, fill = race))+
+  geom_bar(position = "fill") +
+  facet_wrap(vars(smoke)) +
+  theme(legend.position = "none")
+```
+
+c.
+```{r}
+ggplot(data = Gestation,
+       mapping = aes(x = race, y = age, fill = race)) +
+  geom_boxplot()
+```
+
+```{r}
+ggplot(data = Gestation,
+       mapping = aes(race, age)) +
+  geom_boxplot()
+```
+
+d.
+```{r}
+Gestation %>%
+  filter(smoke %in% c("now", "never")) %>%
+  ggplot(aes(x = race, y = wt, fill = smoke)) +
+  geom_boxplot() +
+  labs(fill = "Smoking Status") +
+  theme_minimal()
+
+
+```
+
+#### Question 3
+```{r}
+hep <- read.csv("Hep2012.csv")
+# names(hep)
+```
+
+a.
+```{r}
+points <- rowSums(hep[,-1], na.rm = T)
+points
+hep$Tot <- points
+hep |> head()
+names(hep)
+```
+
+b.
+```{r}
+hep |> 
+  head(n = 2)
+names <- hep |> 
+  select(Athlete, Tot) |> 
+  arrange(desc(Tot)) |> 
+  head(n = 5) 
+
+names <- names$Athlete
+names <- trimws(names)
+names
+```
+
+c.
+
+```{r}
+ggduo(data = hep,columnsY = "Tot",
+      columnsX =  c("Long.Jump", "X100m.Hurdles", "X800m"))
+
+```
+
+d. 
+
+```{r}
+ggpairs(data = hep,
+        columns = 2:8)
+```
+```{r}
+athletes_with_zero_points <- hep[apply(hep[, -1], 1, function(x) any (x==0)), "Athlete"]
+
+athletes_with_zero_points
+trimws(athletes_with_zero_points[!is.na(athletes_with_zero_points)])
+```
+
+```{r}
+hep[which.max(hep$Shot.Put), "Athlete"]
+
+```
+
+e.
+
+
+```{r}
+new_hep <- hep |> 
+  select(X100m.Hurdles, High.Jump, Shot.Put, X200m, Long.Jump,Javelin, X800m)
+ggparcoord(new_hep, groupColumn = "Athlete",
+           scale = "globalminmax") + xlab("") + ylab("")
+```
+The use of globalminmax scale allows us to compare the patterns across different variables and makes the variables to be on a consitent scale for better visualization. 
+Yes, athletes with zero points in any event can be seen from the plot. yes, It makes sense since i found some athlestes with zero scores in some events. 
+
+
+f.
+
+```{r}
+
+hep <- hep |> arrange(desc(Tot))
+hep$winners <- paste(1:nrow(hep), hep$Athlete, sep=" ")
+hep$winners[-(1:3)] <- "Others"
+
+
+
+hep <- hep |> arrange(Tot)
+
+ggparcoord(hep,
+           columns = 2:8,
+           groupColumn = "winners",
+           scale = "globalminmax") +
+  xlab("") +
+  ylab("") +
+  scale_color_manual(values = c("red", "blue", "green", "gray"))
+
+```
+
+
+
+
+QUESTION FOUR
+
+
+```{r}
+water <- read_csv("BathingWaterQuality2013.csv")
+water <- mutate(water,Date= lubridate::dmy(Date))
+water4 <-
+filter(water, Beach %in% c("Sutton", "Portmarnock" ,"Skerries" ,"Howth - Claremont"))
+```
+
+```{r}
+attach(water4)
+attach(water)
+```
+a.
+
+```{r}
+ggplot(data = water4,
+       mapping = aes(x = Date, y = Enterococci, color = Beach)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(aes(yintercept = 100), color = "magenta")
+
+```
+
+
+b.
+```{r}
+ggplot(data = water4,
+       mapping = aes(x = Date, y = E_Coli, color = Beach)) +
+  geom_point() +
+  geom_line() +
+  geom_hline(aes(yintercept = 100), color = "magenta")
+
+```
+
+c.
+
+```{r}
+ggplot(data = water,
+       mapping = aes(x = Date, y = Enterococci)) +
+  geom_point(aes(col = Beach)) +
+  geom_line() +
+  facet_wrap(vars(Beach)) +
+  geom_hline(yintercept = 100) 
+
+```
+
+
+d.
+
+```{r}
+ggplot(data = water, aes(x = Date)) +
+  geom_point(aes(y = E_Coli, col = "E_Coli")) +
+  geom_line(aes(y = E_Coli, col = "E_Coli")) +
+  geom_point(aes(y = Enterococci, col = "Enterococci")) +
+  geom_line(aes(y = Enterococci, col = "Enterococci")) +
+  facet_wrap(~ Beach) +
+  labs(title = "Water Quality over time",
+       y = "Levels") +
+  theme(plot.title = element_text(hjust = .5)) +
+  geom_hline(yintercept = 100)
+
+```
+

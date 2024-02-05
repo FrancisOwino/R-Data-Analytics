@@ -1,0 +1,291 @@
+---
+title: "ST661: Assignment 2"
+author: "Francis Onyango Owino"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Question 1
+a.
+```{r}
+xmat <- matrix(rnorm(1000), nrow=100)
+
+dim(xmat)
+```
+The above code generates a matrix which contains 1000 random numbers. It has 100 rows and 10 columns. Though the number of columns is not specified, it generates 10 columns since 1000 divided by 100 gives 10.
+
+
+b.
+```{r}
+ylist <- lapply(10^(1:4), rnorm)
+
+```
+The above code creates a list called ylist which is as a result applying the random normal function to the vectors 10, 100, 1000 and 10000. It therefore generates 10, 100, 1000 and 10000 random normal variables.
+
+c.
+```{r}
+apply(xmat,2, max)
+
+```
+
+d.
+```{r}
+colSums(xmat > 2.5)
+# apply(xmat, 2, function(x) sum(x > 2.5))
+
+```
+
+e.
+```{r}
+
+sapply(ylist, max)
+
+```
+
+
+f.
+```{r}
+sapply(ylist, function(x) sum(x > 2.5))
+
+
+```
+
+
+#### Question 2
+a.
+```{r}
+skew <- function(x){
+  n <- length(x)
+  meanx <- mean(x)
+  m3 <- sum((x-meanx)^3)/n
+  m2 <- sum((x-meanx)^2)/n
+  skewness <- m3 / (m2^(3/2))
+  
+  return(skewness)
+
+}
+
+
+```
+
+b.
+```{r}
+
+data("mtcars")
+skew(mtcars$wt)
+
+random_numbers50 <- rnorm(50)
+
+skew(random_numbers50)
+
+```
+
+c.
+```{r}
+
+skewed_data_n <- replicate(1000,{
+  data <- rnorm(50)
+  skew(data)
+})
+hist(skewed_data_n, main = "Histogram of Skewed Data (Normal Distribution)",
+     xlab = "Skewness")
+
+mean_skewness <- mean(skewed_data_n)
+mean_skewness
+
+```
+
+d.
+```{r}
+skewed_data_e <- replicate(1000,{
+  data <- rexp(n = 50, rate = 1)
+  skew(data)
+})
+
+hist(skewed_data_e, main = "Histogram of Skewed Data (Exponential)",
+     xlab = "Skewness")
+
+mean_skewness <- mean(skewed_data_e)
+mean_skewness
+
+```
+
+e.
+Results from the normal distribution portray a normal distribution with majority of the data points centered around zero. The distribution looks normal with a mean of about zero. On the other hand, the results for the exponential distribution are a bit skewed to the right with majority of the data points lying between 1 and 2. The mean of the point is about 1.6  
+
+
+
+f.
+```{r}
+load("cdc1.Rdata")
+
+skewness_calculate <- function(data){
+  if (is.numeric(data)) {
+    return(skew(data))
+  } else {
+    return(NA)
+  }
+}
+
+
+skewness_values <- sapply(cdc1, skewness_calculate)
+skewness_values
+
+```
+
+
+
+
+#### Question 3
+a.
+```{r}
+colors <- ifelse(cdc1$weight > cdc1$wtdesire & cdc1$age > 30, "red",
+                 ifelse(cdc1$weight > cdc1$wtdesire & cdc1$age <= 30, "blue",
+                        ifelse(cdc1$weight <= cdc1$wtdesire & cdc1$age > 30, "orange", "cyan")))
+
+
+plot(weight-wtdesire ~ age, data = cdc1, col = colors, pch = 20)
+```
+
+b.
+```{r}
+boxplot.out <- function(x){
+  
+  stats_object <- boxplot.stats(x)
+  
+  
+  low_outliers <- any(x < stats_object$stats[2] - 1.5*(stats_object$stats[4]-stats_object$stats[2]))
+  high_outliers <- any(x > stats_object$stats[4] + 1.5*(stats_object$stats[4]-stats_object$stats[2]))
+  # low_outliers <- any(x < stats_object$stats[2] - 1.5*IQR(x))
+  # high_outliers <- any(x > stats_object$stats[4] + 1.5*IQR(x))
+  
+  if (low_outliers & high_outliers) {
+    return("both")
+  } else if (low_outliers){
+    return("low")
+  } else if (high_outliers){
+    return("high")
+  } else {
+    return("none")
+  }
+  
+  
+}
+
+
+
+
+```
+
+Alternatively,
+
+```{r}
+
+boxplot.out1 <- function(x){
+  stats <- boxplot.stats(x)
+  
+  if (length(stats$out)==0) {
+    return("none")
+  } else if (any(stats$out < stats$stats[1]) && any(stats$out > stats$stats[5])){
+    return("both")
+  } else if (any(stats$out < stats$stats[1])){
+    return("low")
+  }
+  else{
+    return("high")
+  }
+}
+
+```
+```{r}
+
+```
+
+
+c.
+```{r}
+boxplot(weight-wtdesire ~ genhlth, data = cdc1,
+        main = "Boxplot of weight-desired weight vs general health",
+        xlab = "general health")
+
+
+```
+
+d.
+```{r}
+outlier_type <- tapply(cdc1$weight - cdc1$wtdesire, cdc1$genhlth, boxplot.out)
+outlier_type
+
+```
+```{r}
+outlier_type <- tapply(cdc1$weight - cdc1$wtdesire, cdc1$genhlth, boxplot.out1)
+outlier_type
+
+```
+
+e.
+```{r}
+color_vector <- ifelse(outlier_type == "both", "red",
+                       ifelse(outlier_type == "high", "blue",
+                              ifelse(outlier_type == "low", "green", "yellow")))
+
+color_vector
+
+boxplot(weight-wtdesire ~ genhlth, data = cdc1,
+        col = color_vector,
+        main = "Boxplot of Weight - Desired Weight vs General Health",
+        xlab = "General Health")
+```
+
+
+
+#### Question 4
+a.
+```{r}
+
+medianq4 <- function(male_salary, female_salary){
+  all_salaries <- sort(c(male_salary, female_salary))
+  quarter <- cut(all_salaries, fivenum(all_salaries), include.lowest = T)
+  
+  results <- tapply(all_salaries, quarter, function(x){
+    male_in <- intersect(male_salary,x)
+    female_in <- intersect(female_salary,x)
+    results <- median(male_in) - median(female_in)
+  })
+  
+  
+  
+}
+
+
+```
+
+b.
+```{r}
+
+males_female_salaries <- data.frame(
+  salary = c(45.2,46.3,47.2,49.1,51.3,51.9,52.4,54.2,55.5
+             ,56.5,58.4,61.4,62.3,63.7,67.8,68.8),
+  gender = c("M","F","F", "M", "M", "F","F","F", "F",
+             "M", "M", "F", "F", "M", "F", "M"))
+
+
+
+male_salary <- subset(males_female_salaries, gender == "M")$salary
+female_salary <- subset(males_female_salaries, gender == "F")$salary
+
+x <- medianq4(male_salary = male_salary, female_salary = female_salary)
+dimnames(x)[[1]] <- c("Q1", "Q2", "Q3", "Q4")
+x
+```
+
+
+
+
+
+
+
